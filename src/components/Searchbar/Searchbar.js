@@ -1,16 +1,25 @@
 import { Component } from 'react';
-// import PropTypes from 'prop-types';
-// import s from './Searchbar.module.css';
+import PropTypes from 'prop-types';
 
 class Searchbar extends Component {
   state = {
     query: '',
   };
 
+  static propTypes = {
+    onSubmit: PropTypes.func,
+  };
+
   onSubmitHandler = e => {
     e.preventDefault();
 
-    this.props.onSubmit(this.state.query);
+    const query = this.state.query.trim();
+    if (!query) {
+      alert('Please enter a search term to begin your search.');
+      return;
+    }
+
+    this.props.onSubmit(query);
     this.reset();
   };
 

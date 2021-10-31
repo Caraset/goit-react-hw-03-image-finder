@@ -1,25 +1,25 @@
-import { Component } from 'react/cjs/react.production.min';
-import './App.css';
-import ImageGallery from './components/ImageGallery/ImageGallery';
-import Searchbar from './components/Searchbar';
+import Loader from './components/Loader';
+import { Component } from 'react';
 
-const KEY = '23292870-e9e1fc8f4fc8bd7151266ea82';
+import './App.css';
+import 'react-loader-spinner/dist/loader/css/react-spinner-loader.css';
+
+import fetchImages from './services/images-api';
+
+import Searchbar from './components/Searchbar';
+import ImageGallery from './components/ImageGallery';
+import Button from './components/Button';
+import Modal from './components/Modal';
 
 class App extends Component {
   state = {
     images: [],
     query: '',
     page: 1,
+    modalImg: '',
     isLoading: false,
+    showModal: false,
   };
-
-  componentDidMount() {
-    fetch(
-      `https://pixabay.com/api/?q=${this.state.query}&page=${this.state.page}&key=${KEY}&image_type=photo&orientation=horizontal&per_page=12`,
-    )
-      .then(respons => respons.json())
-      .then(res => this.setState({ images: res.hits }));
-  }
 
   componentDidUpdate(prevProps, prevState) {
     if (
@@ -28,24 +28,55 @@ class App extends Component {
     ) {
       return;
     }
+    this.setState({ isLoading: true });
 
-    fetch(
-      `https://pixabay.com/api/?q=${this.state.query}&page=${this.state.page}&key=${KEY}&image_type=photo&orientation=horizontal&per_page=12`,
-    )
-      .then(respons => respons.json())
-      .then(res => this.setState({ images: res.hits }));
+    fetchImages(this.state)
+      .then(res => {
+        const images = [...this.state.images, ...res.hits];
+        this.setState({ images });
+        if (this.state.page !== 1) {
+          window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: 'smooth',
+          });
+        }
+      })
+      .catch(res => {
+        console.log(res);
+      })
+      .finally(() => this.setState({ isLoading: false }));
   }
 
+  openModal = modalImg => {
+    this.setState({ showModal: true, modalImg });
+  };
+
+  closeModal = () => {
+    this.setState({ showModal: false });
+  };
+
   onSearchSubmit = query => {
-    this.setState({ query });
+    this.setState({ query, page: 1, images: [] });
+  };
+
+  onBtnClickHandler = () => {
+    const page = this.state.page + 1;
+    this.setState({ page });
   };
 
   render() {
-    const { images } = this.state;
+    const { images, isLoading, showModal, modalImg } = this.state;
     return (
       <div className="App">
         <Searchbar onSubmit={this.onSearchSubmit}></Searchbar>
-        <ImageGallery images={images} />
+        <ImageGallery images={images} openModal={this.openModal} />
+        {isLoading && <Loader />}
+        {images.length !== 0 && isLoading !== true && (
+          <Button onMoreClick={this.onBtnClickHandler} />
+        )}
+        {showModal && (
+          <Modal closeModal={this.closeModal} modalImg={modalImg} />
+        )}
       </div>
     );
   }
